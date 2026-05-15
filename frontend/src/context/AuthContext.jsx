@@ -9,18 +9,34 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const fetchProfile = async (token) => {
+        try {
+            const response = await api.get("/api/users/profile", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setUser(response.data);
+            return response.data;
+        } catch (error) {
+            console.error("Failed to fetch profile:", error);
+            logout();
+        }
+    };
+
     const login = async (email, password) => {
         try {
             const response = await api.post("/auth/signin", { email, password });
             const { jwt } = response.data;
             localStorage.setItem("jwt", jwt);
-            // After login, we could fetch user profile, but for now we'll just set a placeholder or fetch if we had an endpoint
-            // Let's assume we have /api/users/profile or similar later
-            setUser({ email });
+            await fetchProfile(jwt);
             return response.data;
         } catch (error) {
             throw error;
         }
+    };
+
+    const loginWithToken = async (token) => {
+        localStorage.setItem("jwt", token);
+        await fetchProfile(token);
     };
 
     const signup = async (userData) => {
@@ -28,7 +44,7 @@ export const AuthProvider = ({ children }) => {
             const response = await api.post("/auth/signup", userData);
             const { jwt } = response.data;
             localStorage.setItem("jwt", jwt);
-            setUser({ email: userData.email });
+            await fetchProfile(jwt);
             return response.data;
         } catch (error) {
             throw error;
@@ -43,14 +59,14 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const jwt = localStorage.getItem("jwt");
         if (jwt) {
-            // Logic to verify token or fetch user profile could go here
-            setUser({ loggedIn: true }); // Placeholder
+            fetchProfile(jwt).finally(() => setLoading(false));
+        } else {
+            setLoading(false);
         }
-        setLoading(false);
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, login, signup, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, signup, logout, loading, loginWithToken, fetchProfile }}>
             {children}
         </AuthContext.Provider>
     );

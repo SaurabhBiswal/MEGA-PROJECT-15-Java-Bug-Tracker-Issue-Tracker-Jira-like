@@ -37,4 +37,9 @@ public class UserServiceImpl implements UserService {
         }
         return optionalUser.get();
     }
+
+    @Override
+    public User updateUser(User user) throws Exception {
+        return userRepository.save(user);
+    }
 }
