@@ -213,15 +213,7 @@ This project is licensed under the MIT License.
 
 ## 👨‍💻 Author
 
-Built with ❤️ as part of a 2-week full-stack development challenge.
-
-## 🙏 Acknowledgments
-
-- Spring Boot team for the excellent framework
-- React and Vite teams for modern frontend tooling
-- Tailwind CSS for beautiful, utility-first styling
-- Lucide for the icon library
-
+Built with ❤️ by SAURABH BISWAL as part of a 2-week full-stack development challenge.
 ---
 
 **Happy Bug Tracking!** 🐛✨
