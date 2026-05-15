@@ -1,9 +1,15 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { useState } from "react";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import Issues from "./pages/Issues";
+import Kanban from "./pages/Kanban";
+import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import OAuth2Success from "./pages/OAuth2Success";
 import "./App.css";
 
 const ProtectedRoute = ({ children }) => {
@@ -29,10 +35,16 @@ const LoginPage = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
     try {
       await login(email, password);
     } catch (err) {
-      setError("Login failed. Make sure backend is running.");
+      console.error("Login detail error:", err);
+      let backendError = err.response?.data?.message || err.response?.data;
+      if (typeof backendError === 'object') {
+        backendError = backendError.error || backendError.message || JSON.stringify(backendError);
+      }
+      setError(backendError || "Login failed. Please check your credentials.");
     }
   };
 
@@ -81,6 +93,39 @@ const LoginPage = () => {
             Sign In
           </button>
         </form>
+
+        <div className="mt-6 space-y-4">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-800"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-slate-900 px-2 text-slate-500 font-bold tracking-widest">Or continue with</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => window.location.href = "http://localhost:8080/oauth2/authorization/google"}
+            className="w-full py-3 bg-white hover:bg-slate-50 text-slate-900 rounded-xl font-bold transition-all flex items-center justify-center space-x-3 shadow-lg active:scale-[0.98]"
+          >
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+            <span>Sign in with Google</span>
+          </button>
+        </div>
+
+        <p className="text-center text-slate-500 mt-6 text-sm">
+          Forgot your password?{" "}
+          <Link to="/forgot-password" size="sm" className="text-blue-400 hover:text-blue-300 font-bold">
+            Reset it
+          </Link>
+        </p>
+
+        <p className="text-center text-slate-500 mt-6">
+          Don't have an account?{" "}
+          <Link to="/signup" className="text-blue-400 hover:text-blue-300">
+            Sign Up
+          </Link>
+        </p>
       </div>
     </div>
   );
@@ -88,38 +133,52 @@ const LoginPage = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/projects"
-            element={
-              <ProtectedRoute>
-                <Projects />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/issues"
-            element={
-              <ProtectedRoute>
-                <Issues />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/oauth2/success" element={<OAuth2Success />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects"
+              element={
+                <ProtectedRoute>
+                  <Projects />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/issues"
+              element={
+                <ProtectedRoute>
+                  <Issues />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/kanban"
+              element={
+                <ProtectedRoute>
+                  <Kanban />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
