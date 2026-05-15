@@ -26,28 +26,27 @@ public class ProjectController {
     @GetMapping
     public ResponseEntity<List<Project>> getProjects(
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String tag,
-            @RequestHeader("Authorization") String jwt) throws Exception {
-        User user = userService.findUserByJwt(jwt);
+            @RequestParam(required = false) String tag) throws Exception {
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
+                .getName();
+        User user = userService.findUserByEmail(email);
         List<Project> projects = projectService.getProjectByTeam(user, category, tag);
         return new ResponseEntity<>(projects, HttpStatus.OK);
     }
 
     @GetMapping("/{projectId}")
     public ResponseEntity<Project> getProjectById(
-            @PathVariable Long projectId,
-            @RequestHeader("Authorization") String jwt) throws Exception {
-        // Just validating token
-        userService.findUserByJwt(jwt);
+            @PathVariable Long projectId) throws Exception {
         Project project = projectService.getProjectById(projectId);
         return new ResponseEntity<>(project, HttpStatus.OK);
     }
 
     @PostMapping
     public ResponseEntity<Project> createProject(
-            @RequestBody Project project,
-            @RequestHeader("Authorization") String jwt) throws Exception {
-        User user = userService.findUserByJwt(jwt);
+            @RequestBody Project project) throws Exception {
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
+                .getName();
+        User user = userService.findUserByEmail(email);
         Project createdProject = projectService.createProject(project, user);
         return new ResponseEntity<>(createdProject, HttpStatus.CREATED);
     }
@@ -55,18 +54,17 @@ public class ProjectController {
     @PatchMapping("/{projectId}")
     public ResponseEntity<Project> updateProject(
             @PathVariable Long projectId,
-            @RequestBody Project project,
-            @RequestHeader("Authorization") String jwt) throws Exception {
-        userService.findUserByJwt(jwt);
+            @RequestBody Project project) throws Exception {
         Project updatedProject = projectService.updateProject(project, projectId);
         return new ResponseEntity<>(updatedProject, HttpStatus.OK);
     }
 
     @DeleteMapping("/{projectId}")
     public ResponseEntity<MessageResponse> deleteProject(
-            @PathVariable Long projectId,
-            @RequestHeader("Authorization") String jwt) throws Exception {
-        User user = userService.findUserByJwt(jwt);
+            @PathVariable Long projectId) throws Exception {
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
+                .getName();
+        User user = userService.findUserByEmail(email);
         projectService.deleteProject(projectId, user.getId());
         MessageResponse res = new MessageResponse("project deleted successfully");
         return new ResponseEntity<>(res, HttpStatus.OK);
@@ -74,40 +72,36 @@ public class ProjectController {
 
     @GetMapping("/search")
     public ResponseEntity<List<Project>> searchProjects(
-            @RequestParam(required = false) String keyword,
-            @RequestHeader("Authorization") String jwt) throws Exception {
-        User user = userService.findUserByJwt(jwt);
+            @RequestParam(required = false) String keyword) throws Exception {
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
+                .getName();
+        User user = userService.findUserByEmail(email);
         List<Project> projects = projectService.searchProjects(keyword, user);
         return new ResponseEntity<>(projects, HttpStatus.OK);
     }
 
     @GetMapping("/{projectId}/chat")
     public ResponseEntity<Chat> getChatByProjectId(
-            @PathVariable Long projectId,
-            @RequestHeader("Authorization") String jwt) throws Exception {
-        userService.findUserByJwt(jwt);
+            @PathVariable Long projectId) throws Exception {
         Chat chat = projectService.getChatByProjectId(projectId);
         return new ResponseEntity<>(chat, HttpStatus.OK);
     }
 
+    @Autowired
+    private com.zosh.issue_tracker.service.EmailService emailService;
+
     @PostMapping("/{projectId}/invite")
     public ResponseEntity<MessageResponse> inviteProject(
-            @RequestHeader("Authorization") String jwt,
             @RequestParam String email,
             @PathVariable Long projectId) throws Exception {
-        // Invite logic might be better placed in service, but for now we'll handle just
-        // adding user to team
-        // NOTE: The previous plan was to use userId for add/remove, but email is more
-        // user-friendly for invites.
-        // Let's stick to the previous plan but I'll use email here as it's more
-        // realistic for an invite system.
-        // Actually, let's implement the generic add user via ID as well if needed, but
-        // email is better.
-        // Wait, the plan said "Add user to team". I'll implement "invite" via email.
-
-        userService.findUserByJwt(jwt);
         User user = userService.findUserByEmail(email);
         projectService.addUserToProject(projectId, user.getId());
+
+        Project project = projectService.getProjectById(projectId);
+        emailService.sendEmail(email, "Project Invitation",
+                "You have been invited to join the project: " + project.getName()
+                        + ".\nCheck it out on your dashboard!");
+
         MessageResponse res = new MessageResponse("user invited to the project");
         return new ResponseEntity<>(res, HttpStatus.OK);
     }

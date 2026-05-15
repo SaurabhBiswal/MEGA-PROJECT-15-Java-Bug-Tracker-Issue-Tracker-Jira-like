@@ -4,11 +4,14 @@ import com.zosh.issue_tracker.model.Issue;
 import com.zosh.issue_tracker.model.User;
 import com.zosh.issue_tracker.request.IssueRequest;
 import com.zosh.issue_tracker.response.MessageResponse;
+import com.zosh.issue_tracker.service.FileStorageService;
 import com.zosh.issue_tracker.service.IssueService;
 import com.zosh.issue_tracker.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -22,6 +25,9 @@ public class IssueController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private FileStorageService fileStorageService;
+
     @GetMapping("/{issueId}")
     public ResponseEntity<Issue> getIssueById(@PathVariable Long issueId) throws Exception {
         return ResponseEntity.ok(issueService.getIssueById(issueId));
@@ -33,20 +39,33 @@ public class IssueController {
     }
 
     @PostMapping
-    public ResponseEntity<Issue> createIssue(@RequestBody IssueRequest issue,
-            @RequestHeader("Authorization") String token) throws Exception {
-        User user = userService.findUserByJwt(token);
+    public ResponseEntity<Issue> createIssue(@RequestBody IssueRequest issue) throws Exception {
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
+                .getName();
+        User user = userService.findUserByEmail(email);
         Issue createdIssue = issueService.createIssue(issue, user);
         return ResponseEntity.ok(createdIssue);
     }
 
     @DeleteMapping("/{issueId}")
-    public ResponseEntity<MessageResponse> deleteIssue(@PathVariable Long issueId,
-            @RequestHeader("Authorization") String token) throws Exception {
-        User user = userService.findUserByJwt(token);
+    public ResponseEntity<MessageResponse> deleteIssue(@PathVariable Long issueId) throws Exception {
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()
+                .getName();
+        User user = userService.findUserByEmail(email);
         issueService.deleteIssue(issueId, user.getId());
-        MessageResponse res = new MessageResponse("Issue deleted");
-        return ResponseEntity.ok(res);
+        MessageResponse res = new MessageResponse("Issue deleted successfully");
+        return new ResponseEntity<>(res, HttpStatus.OK);
+    }
+
+    @PostMapping("/{issueId}/screenshot")
+    public ResponseEntity<Issue> uploadScreenshot(
+            @PathVariable Long issueId,
+            @RequestParam("file") MultipartFile file) throws Exception {
+        String url = fileStorageService.save(file);
+        Issue issue = issueService.getIssueById(issueId);
+        issue.setScreenshotUrl(url);
+        Issue updatedIssue = issueService.updateIssue(issueId, issue);
+        return new ResponseEntity<>(updatedIssue, HttpStatus.OK);
     }
 
     @PutMapping("/{issueId}/assignee/{userId}")

@@ -13,10 +13,11 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "it_projects")
 public class Project {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String name;
@@ -24,6 +25,7 @@ public class Project {
     private String category;
 
     @ElementCollection
+    @CollectionTable(name = "it_project_tags", joinColumns = @JoinColumn(name = "project_id"))
     private List<String> tags = new ArrayList<>();
 
     @JsonIgnore
@@ -34,5 +36,6 @@ public class Project {
     private User owner;
 
     @ManyToMany
+    @JoinTable(name = "it_project_team", joinColumns = @JoinColumn(name = "project_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
     private List<User> team = new ArrayList<>();
 }

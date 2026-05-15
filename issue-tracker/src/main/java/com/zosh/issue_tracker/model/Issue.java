@@ -1,6 +1,5 @@
 package com.zosh.issue_tracker.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDate;
@@ -9,10 +8,11 @@ import java.util.List;
 
 @Entity
 @Data
+@Table(name = "it_issues")
 public class Issue {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String title;
@@ -22,14 +22,15 @@ public class Issue {
                             // is better
     private String priority;
     private LocalDate dueDate;
+    private String screenshotUrl;
 
     @ElementCollection
+    @CollectionTable(name = "it_issue_tags", joinColumns = @JoinColumn(name = "issue_id"))
     private List<String> tags = new ArrayList<>();
 
     @ManyToOne
     private User assignee;
 
-    @JsonIgnore
     @ManyToOne
     private Project project;
 }

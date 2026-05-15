@@ -3,6 +3,7 @@ import Sidebar from "../components/Sidebar";
 import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
 import CreateIssueModal from "../components/CreateIssueModal";
+import IssueDetailsModal from "../components/IssueDetailsModal";
 import ProjectSwitcher from "../components/ProjectSwitcher";
 import api from "../config/api";
 import { Ticket, Plus, Search, Filter } from "lucide-react";
@@ -14,6 +15,8 @@ const Issues = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedIssueId, setSelectedIssueId] = useState(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
     useEffect(() => {
         const fetchProjects = async () => {
@@ -72,13 +75,13 @@ const Issues = () => {
     }
 
     return (
-        <div className="flex bg-[#0f172a] min-h-screen text-slate-300">
+        <div className="flex bg-slate-50 dark:bg-[#0f172a] min-h-screen text-slate-700 dark:text-slate-300 transition-colors">
             <Sidebar />
 
             <main className="ml-64 flex-1 p-8">
                 <header className="flex justify-between items-center mb-10">
                     <div>
-                        <h1 className="text-3xl font-bold text-white mb-3">All Issues</h1>
+                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-3">All Issues</h1>
                         <ProjectSwitcher
                             projects={projects}
                             selectedProject={selectedProject}
@@ -108,10 +111,10 @@ const Issues = () => {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Search issues..."
-                                    className="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                                 />
                             </div>
-                            <button className="flex items-center space-x-2 px-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-300 hover:bg-slate-800 transition-colors">
+                            <button className="flex items-center space-x-2 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                                 <Filter size={18} />
                                 <span>Filters</span>
                             </button>
@@ -122,7 +125,11 @@ const Issues = () => {
                                 {filteredIssues.map((issue) => (
                                     <div
                                         key={issue.id}
-                                        className="bg-slate-900 border border-slate-800 rounded-xl p-6 hover:border-blue-500/50 transition-all cursor-pointer group"
+                                        onClick={() => {
+                                            setSelectedIssueId(issue.id);
+                                            setIsDetailsOpen(true);
+                                        }}
+                                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 hover:border-blue-500/50 transition-all cursor-pointer group shadow-sm dark:shadow-none"
                                     >
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1">
@@ -132,10 +139,10 @@ const Issues = () => {
                                                     </span>
                                                     <span
                                                         className={`px-3 py-1 rounded-full text-xs font-bold ${issue.status === "done"
-                                                                ? "bg-green-500/10 text-green-500"
-                                                                : issue.status === "in_progress"
-                                                                    ? "bg-blue-500/10 text-blue-500"
-                                                                    : "bg-yellow-500/10 text-yellow-500"
+                                                            ? "bg-green-500/10 text-green-500"
+                                                            : issue.status === "in_progress"
+                                                                ? "bg-blue-500/10 text-blue-500"
+                                                                : "bg-yellow-500/10 text-yellow-500"
                                                             }`}
                                                     >
                                                         {issue.status?.replace("_", " ")}
@@ -144,7 +151,7 @@ const Issues = () => {
                                                         {issue.priority}
                                                     </span>
                                                 </div>
-                                                <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-blue-400 transition-colors">
+                                                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                                     {issue.title}
                                                 </h3>
                                                 <p className="text-slate-500 text-sm line-clamp-2">
@@ -200,6 +207,13 @@ const Issues = () => {
                         onCreated={handleIssueCreated}
                     />
                 )}
+
+                <IssueDetailsModal
+                    isOpen={isDetailsOpen}
+                    onClose={() => setIsDetailsOpen(false)}
+                    issueId={selectedIssueId}
+                    onUpdate={handleIssueCreated}
+                />
             </main>
         </div>
     );

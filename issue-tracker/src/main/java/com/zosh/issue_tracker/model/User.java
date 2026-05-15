@@ -6,11 +6,11 @@ import lombok.Data;
 
 @Entity
 @Data
-@Table(name = "users")
+@Table(name = "it_users")
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String fullName;
@@ -21,5 +21,7 @@ public class User {
     private String password;
 
     private int projectSize = 0;
+
+    private String role = "ROLE_DEVELOPER";
 
 }

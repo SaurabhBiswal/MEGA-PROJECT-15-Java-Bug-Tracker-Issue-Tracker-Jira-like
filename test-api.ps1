@@ -164,6 +164,31 @@ try {
 }
 
 Write-Host ""
+
+# Test 11: Comment System
+Write-Host "[TEST 11] Comment System..." -ForegroundColor Yellow
+try {
+    # 11.1 Create Comment
+    $commentBody = @{
+        content = "This is a test comment from API"
+        issue = @{ id = $issueId }
+    } | ConvertTo-Json
+    $commentRes = Invoke-RestMethod -Uri "$baseUrl/api/comments" -Method POST -Headers $headers -Body $commentBody
+    $commentId = $commentRes.id
+    Write-Host "✓ Comment created: $($commentRes.content)" -ForegroundColor Green
+
+    # 11.2 Get Comments
+    $comments = Invoke-RestMethod -Uri "$baseUrl/api/comments/$issueId" -Method GET -Headers $headers
+    Write-Host "✓ Retrieved $($comments.Count) comment(s) for issue" -ForegroundColor Green
+
+    # 11.3 Delete Comment
+    $deleteRes = Invoke-RestMethod -Uri "$baseUrl/api/comments/$commentId" -Method DELETE -Headers $headers
+    Write-Host "✓ Comment deleted successfully!" -ForegroundColor Green
+} catch {
+    Write-Host "✗ Comment system test failed: $_" -ForegroundColor Red
+}
+
+Write-Host ""
 Write-Host "==================================" -ForegroundColor Cyan
 Write-Host "Test Summary" -ForegroundColor Cyan
 Write-Host "==================================" -ForegroundColor Cyan

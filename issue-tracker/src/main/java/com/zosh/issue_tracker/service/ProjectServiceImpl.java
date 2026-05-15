@@ -95,11 +95,12 @@ public class ProjectServiceImpl implements ProjectService {
     public void addUserToProject(Long projectId, Long userId) throws Exception {
         Project project = getProjectById(projectId);
         User user = userService.findUserById(userId);
-        if (!project.getTeam().contains(user)) {
-            project.getChat().getProject().getTeam().add(user); // Wait, this logic is a bit circular, accessing
-                                                                // project.getTeam() is better
-            project.getTeam().add(user);
+
+        if (project.getTeam().contains(user)) {
+            throw new Exception("User is already a member of this project team");
         }
+
+        project.getTeam().add(user);
         projectRepository.save(project);
     }
 

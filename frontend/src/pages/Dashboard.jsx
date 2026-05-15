@@ -6,34 +6,50 @@ import ProjectSwitcher from "../components/ProjectSwitcher";
 import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
 import CreateProjectModal from "../components/CreateProjectModal";
+import IssueDetailsModal from "../components/IssueDetailsModal";
+import InviteMemberModal from "../components/InviteMemberModal";
 import api from "../config/api";
-import { Plus, FolderKanban } from "lucide-react";
+import { Plus, FolderKanban, Share2 } from "lucide-react";
 
 const Dashboard = () => {
     const [projects, setProjects] = useState([]);
     const [selectedProject, setSelectedProject] = useState(null);
     const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
     const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [issues, setIssues] = useState([]);
+    const [selectedIssueId, setSelectedIssueId] = useState(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
     useEffect(() => {
-        const fetchProjects = async () => {
+        const fetchDashboardData = async () => {
             try {
-                setLoading(true);
-                const response = await api.get("/api/projects");
-                setProjects(response.data);
-                if (response.data.length > 0 && !selectedProject) {
-                    setSelectedProject(response.data[0]);
+                if (refreshTrigger === 0) setLoading(true);
+                const [projRes] = await Promise.all([
+                    api.get("/api/projects")
+                ]);
+                setProjects(projRes.data);
+
+                let currentProject = selectedProject;
+                if (projRes.data.length > 0 && !selectedProject) {
+                    currentProject = projRes.data[0];
+                    setSelectedProject(currentProject);
+                }
+
+                if (currentProject) {
+                    const issRes = await api.get(`/api/issues/project/${currentProject.id}`);
+                    setIssues(issRes.data);
                 }
             } catch (error) {
-                console.error("Error fetching projects:", error);
+                console.error("Error fetching dashboard data:", error);
             } finally {
                 setLoading(false);
             }
         };
-        fetchProjects();
-    }, [refreshTrigger]);
+        fetchDashboardData();
+    }, [refreshTrigger, selectedProject?.id]);
 
     const handleIssueCreated = () => {
         setRefreshTrigger((prev) => prev + 1);
@@ -57,13 +73,13 @@ const Dashboard = () => {
     }
 
     return (
-        <div className="flex bg-[#0f172a] min-h-screen text-slate-300">
+        <div className="flex bg-slate-50 dark:bg-[#0f172a] min-h-screen text-slate-700 dark:text-slate-300 transition-colors">
             <Sidebar />
 
             <main className="ml-64 flex-1 p-8">
                 <header className="flex justify-between items-center mb-10">
                     <div>
-                        <h1 className="text-3xl font-bold text-white mb-3">
+                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-3">
                             Project Overview
                         </h1>
                         <ProjectSwitcher
@@ -89,8 +105,13 @@ const Dashboard = () => {
                                 </div>
                             )}
                         </div>
-                        <button className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-700 transition-colors">
-                            Share
+                        <button
+                            onClick={() => setIsInviteModalOpen(true)}
+                            disabled={!selectedProject?.id}
+                            className="flex items-center space-x-2 px-4 py-2 bg-blue-600/10 hover:bg-blue-600/20 disabled:opacity-30 disabled:hover:scale-100 border border-blue-500/30 rounded-lg text-sm font-bold text-blue-500 transition-all hover:scale-105"
+                        >
+                            <Share2 size={16} />
+                            <span>Invite</span>
                         </button>
                     </div>
                 </header>
@@ -98,36 +119,44 @@ const Dashboard = () => {
                 {selectedProject ? (
                     <div className="space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-xl border border-slate-700/50 shadow-xl">
-                                <p className="text-slate-400 text-sm font-medium mb-1">
+                            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-xl">
+                                <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">
                                     Total Issues
                                 </p>
-                                <p className="text-3xl font-bold text-white">24</p>
-                                <div className="mt-2 text-xs text-slate-500">
-                                    +3 from last week
+                                <p className="text-3xl font-bold text-slate-900 dark:text-white">{issues.length}</p>
+                                <div className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                                    Across all categories
                                 </div>
                             </div>
-                            <div className="bg-gradient-to-br from-green-900/20 to-slate-900 p-6 rounded-xl border border-green-700/30 shadow-xl">
-                                <p className="text-slate-400 text-sm font-medium mb-1">
+                            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-xl">
+                                <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">
                                     Completed
                                 </p>
-                                <p className="text-3xl font-bold text-green-400">18</p>
-                                <div className="mt-2 text-xs text-green-500/70">75% done</div>
+                                <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                                    {issues.filter(i => i.status === 'done').length}
+                                </p>
+                                <div className="mt-2 text-xs text-green-600 dark:text-green-500/70">
+                                    {issues.length > 0
+                                        ? Math.round((issues.filter(i => i.status === 'done').length / issues.length) * 100)
+                                        : 0}% done
+                                </div>
                             </div>
-                            <div className="bg-gradient-to-br from-blue-900/20 to-slate-900 p-6 rounded-xl border border-blue-700/30 shadow-xl">
-                                <p className="text-slate-400 text-sm font-medium mb-1">
+                            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-xl">
+                                <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">
                                     In Progress
                                 </p>
-                                <p className="text-3xl font-bold text-blue-400">6</p>
-                                <div className="mt-2 text-xs text-blue-500/70">
-                                    Active sprint
+                                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                                    {issues.filter(i => i.status === 'in_progress').length}
+                                </p>
+                                <div className="mt-2 text-xs text-blue-600 dark:text-blue-500/70">
+                                    Active tracking
                                 </div>
                             </div>
                         </div>
 
                         <section className="space-y-4">
                             <div className="flex justify-between items-center px-2">
-                                <h2 className="text-xl font-bold text-white">Recent Issues</h2>
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Recent Issues</h2>
                                 <button
                                     onClick={() => setIsIssueModalOpen(true)}
                                     className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors flex items-center space-x-1"
@@ -139,7 +168,13 @@ const Dashboard = () => {
 
                             <IssueList
                                 projectId={selectedProject.id}
-                                key={`${selectedProject.id}-${refreshTrigger}`}
+                                issues={issues}
+                                loading={loading}
+                                onIssueClick={(id) => {
+                                    setSelectedIssueId(id);
+                                    setIsDetailsOpen(true);
+                                }}
+                                onCreateIssue={() => setIsIssueModalOpen(true)}
                             />
                         </section>
                     </div>
@@ -172,6 +207,20 @@ const Dashboard = () => {
                     isOpen={isProjectModalOpen}
                     onClose={() => setIsProjectModalOpen(false)}
                     onCreated={handleProjectCreated}
+                />
+
+                <InviteMemberModal
+                    isOpen={isInviteModalOpen}
+                    onClose={() => setIsInviteModalOpen(false)}
+                    projectId={selectedProject?.id}
+                    onInvited={() => setRefreshTrigger(prev => prev + 1)}
+                />
+
+                <IssueDetailsModal
+                    isOpen={isDetailsOpen}
+                    onClose={() => setIsDetailsOpen(false)}
+                    issueId={selectedIssueId}
+                    onUpdate={handleIssueCreated}
                 />
             </main>
         </div>

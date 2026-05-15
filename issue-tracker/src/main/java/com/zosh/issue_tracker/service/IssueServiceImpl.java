@@ -74,4 +74,9 @@ public class IssueServiceImpl implements IssueService {
         issue.setStatus(status);
         return issueRepository.save(issue);
     }
+
+    @Override
+    public Issue updateIssue(Long issueId, Issue issue) throws Exception {
+        return issueRepository.save(issue);
+    }
 }
